@@ -2,7 +2,7 @@
   "name": "vscode-jgodi-react-generator",
   "displayName": "VSCode React Generator",
   "description": "Generates React files...",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "jgodi",
   "author": {
     "name": "Joshua Godi",

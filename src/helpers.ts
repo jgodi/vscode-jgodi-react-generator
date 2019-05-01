@@ -65,14 +65,14 @@ export class FileHelper {
 
     const compName = this.getComponentName(componentName);
     const prefixedCompName = `${prefix}${this.getComponentName(componentName)}`;
-    const compFileName = `${this.getComponentFileName(componentName)}.${suffix}`;
+    const compFileName = this.getComponentFileName(componentName);
 
     let componentContent = fs
       .readFileSync(templateFileName)
       .toString()
       .replace(/{prefixedComponentName}/g, prefixedCompName)
       .replace(/{componentName}/g, compName)
-      .replace(/{componentFileName}/g, compFileName);
+      .replace(/{componentFileName}/g, `${this.getComponentFileName(componentName)}.${suffix}`);
 
     let filename = `${componentDir}/${compFileName}.${suffix}.spec.${extension}`;
     return this.createFile(filename, componentContent).pipe(map(() => filename));
