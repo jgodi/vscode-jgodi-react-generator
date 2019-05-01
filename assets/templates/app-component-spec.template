@@ -1,0 +1,25 @@
+import React from 'react';
+import { shallow, ShallowWrapper } from 'enzyme';
+import { ThemeProvider } from 'styled-components';
+import { generateHawkinsThemeForApp } from '@sfui/client';
+
+import { {componentName} } from '../index';
+
+const theme = generateHawkinsThemeForApp({ main: '#f7f7f7', light: '#f7f7f7', dark: '#f7f7f7' });
+
+describe('Component: {componentName}', () => {
+  let wrapper: ShallowWrapper;
+
+  beforeEach(() => {
+    wrapper = shallow(
+      <ThemeProvider theme={theme}>
+        <{componentName} />
+      </ThemeProvider>,
+    );
+  });
+
+  it('should render...', () => {
+    expect(wrapper.exists()).toBe(true);
+    expect(wrapper).toMatchSnapshot();
+  });  
+});

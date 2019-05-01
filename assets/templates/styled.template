@@ -1,0 +1,8 @@
+import styled from 'styled-components';
+
+export const {componentName}Container = styled.div`
+  display: flex;
+  padding: 24px;
+  flex: 1;
+  overflow: auto;
+`;

@@ -1,85 +1,85 @@
-'use strict';
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import { ExtensionContext, workspace, window, commands } from 'vscode';
 import { paramCase } from 'change-case';
-import { Observable } from 'rxjs';
+import { from, forkJoin } from 'rxjs';
+import { concatMap, filter, first, tap } from 'rxjs/operators';
 
 import { FileHelper, logger } from './helpers';
-import { Config as ConfigInterface } from './config.interface';
 
-const TEMPLATE_SUFFIX_SEPERATOR = '-';
-
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
 export function activate(context: ExtensionContext) {
+  const createComponent = (uri, type: string, extension: string) => {
+    let enterComponentNameDialog$ = from(
+      window.showInputBox({
+        prompt: 'Enter the file name:',
+      }),
+    );
 
-    const createComponent = (uri, suffix: string = '') => {
-        // Display a dialog to the user
-        let enterComponentNameDialog$ = Observable.from(
-            window.showInputBox(
-                {prompt: 'Please enter component name in camelCase then I can convert it to PascalCase for you.'}
-            ));
+    enterComponentNameDialog$
+      .pipe(
+        concatMap((val) => {
+          if (val.length === 0) {
+            logger('error', 'Component name can not be empty!');
+            throw new Error('Component name can not be empty!');
+          }
+          let componentName = paramCase(val);
+          let componentFileName = FileHelper.getComponentFileName(componentName);
+          let componentDir = FileHelper.createDirectory(uri, componentFileName);
+          let testDir = componentDir;
 
-        enterComponentNameDialog$
-            .concatMap( val => {
-                if (val.length === 0) {
-                    logger('error', 'Component name can not be empty!');
-                    throw new Error('Component name can not be empty!');
-                }
-                let componentName = paramCase(val);
-                let componentDir = FileHelper.createComponentDir(uri, componentName);
+          if (type === 'app-component' || type === 'app-flow') {
+            testDir = FileHelper.createDirectory(uri, `${componentFileName}/__tests__`);
+          }
 
-                return Observable.forkJoin(
-                    FileHelper.createComponent(componentDir, componentName, suffix),
-                    FileHelper.createIndexFile(componentDir, componentName),
-                    FileHelper.createCSS(componentDir, componentName),
-                );
-            })
-            .concatMap(result => Observable.from(result))
-            .filter(path => path.length > 0)
-            .first()
-            .concatMap(filename => Observable.from(workspace.openTextDocument(filename)))
-            .concatMap(textDocument => {
-                if (!textDocument) {
-                    logger('error', 'Could not open file!');
-                    throw new Error('Could not open file!');
-                };
-                return Observable.from(window.showTextDocument(textDocument))
-            })
-            .do(editor => {
-                if (!editor) {
-                    logger('error', 'Could not open file!');
-                    throw new Error('Could not open file!')
-                };
-            })
-            .subscribe(
-                (c) => logger('success', 'React component successfully created!'),
-                err => logger('error', err.message)
-            );
-    };
+          let steps = [
+            FileHelper.createComponentFile(componentDir, componentName, type, extension),
+            FileHelper.createSpecFile(testDir, componentName, type, extension),
+          ];
 
-    const componentArray = [
-        { type: "container", commandId: 'extension.genReactContainerComponentFiles' },
-        { type: "stateless", commandId: 'extension.genReactStatelessComponentFiles' },
-        { type: "reduxContainer", commandId: 'extension.genReactReduxContainerComponentFiles' },
-        { type: "reduxStateless", commandId: 'extension.genReactReduxStatelessComponentFiles' },
-    ];
+          if (type !== 'app-flow') {
+            steps.push(FileHelper.createIndexFile(componentDir, componentName, type, extension));
+          }
 
-    // The command has been defined in the package.json file
-    // Now provide the implementation of the command with  registerCommand
-    // The commandId parameter must match the command field in package.json
-    componentArray.forEach(c => {
-        const suffix = `${TEMPLATE_SUFFIX_SEPERATOR}${c.type}`;
-        const disposable = commands.registerCommand(
-            c.commandId, (uri) => createComponent(uri, suffix));
-        
-        // Add to a list of disposables which are disposed when this extension is deactivated.
-        context.subscriptions.push(disposable);
-    });
+          steps.push(FileHelper.createStyledFile(componentDir, componentName, extension));
+
+          return forkJoin(steps);
+        }),
+        concatMap((result) => from(result)),
+        filter((path) => path.length > 0),
+        first(),
+        concatMap((filename) => from(workspace.openTextDocument(filename))),
+        concatMap((textDocument) => {
+          if (!textDocument) {
+            logger('error', 'Could not open file!');
+            throw new Error('Could not open file!');
+          }
+          return from(window.showTextDocument(textDocument));
+        }),
+        tap((editor) => {
+          if (!editor) {
+            logger('error', 'Could not open file!');
+            throw new Error('Could not open file!');
+          }
+        }),
+      )
+      .subscribe(
+        (c) => logger('success', 'Component successfully created!'),
+        (err) => logger('error', err.message),
+      );
+  };
+
+  const componentArray = [
+    { type: 'commons-component', extension: 'js', commandId: 'extension.generateCommonsComponent' },
+    { type: 'app-component', extension: 'tsx', commandId: 'extension.generateAppComponent' },
+    { type: 'app-flow', extension: 'tsx', commandId: 'extension.generateAppFlowComponent' },
+  ];
+
+  componentArray.forEach((c) => {
+    const disposable = commands.registerCommand(c.commandId, (uri) =>
+      createComponent(uri, c.type, c.extension),
+    );
+    context.subscriptions.push(disposable);
+  });
 }
 
-// this method is called when your extension is deactivated
 export function deactivate() {
-    // code whe
+  // No op
 }

@@ -1,0 +1,12 @@
+import React, { PureComponent } from 'react';
+
+import { {componentName}Container } from './{componentFileName}.styled';
+
+export interface {componentName}Props {}
+export interface {componentName}State {}
+
+export class {componentName} extends PureComponent<{componentName}Props, {componentName}State> {
+  render() {
+    return <{componentName}Container>TODO</{componentName}Container>;
+  }
+}

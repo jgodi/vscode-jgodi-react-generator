@@ -1,0 +1,14 @@
+import React, { PureComponent } from 'react';
+import PropTypes from 'prop-types';
+
+import { {componentName}Container } from './{componentFileName}.styled';
+
+export class {prefixedComponentName} extends PureComponent {
+  static propsTypes = {};
+
+  static defaultProps = {};
+
+  render() {
+    return <{componentName}Container>TODO</{componentName}Container>;
+  }
+}

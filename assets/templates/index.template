@@ -1,3 +1,1 @@
-import {componentName} from {quotes}./{componentName}{quotes};
-
-export default {componentName};
+export { {prefixedComponentName} } from './{componentFileName}';
